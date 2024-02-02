@@ -6,13 +6,24 @@ The purpose of this script is to find the impact of SOCs on the spectrum of a
 molecule.
 """
 
+import argparse
 import sys
 import numpy as np
-import mol1_def2TZVP as mol1
 import cmath as m
 
 eV2cm = 8065.479
 cm2eV = 1.0/eV2cm
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('data')
+    parser.add_argument('-l', '--show_largest',
+                        default=False, action='store_true')
+    parser.add_argument('-b', '--subblock', default=None,
+                        type=str, help="columns,rows use XAB")
+    args = parser.parse_args()
+    return args
 
 
 def print_vector_latex(v,
@@ -80,26 +91,40 @@ def print_vector_latex(v,
     return output
 
 
-def print_matrix_simpler(h, title: str = ""):
-    print(f"Printing : {title}")
-    print('    ', end='')
-    for i, row in enumerate(h):
-        print(f"       {i:2d}  ", end='')
+def print_submatrix(h, rows, cols, title: str = ""):
+
+    rows.sort()
+
+    print(f"Printing: {title}")
+    print('   ', end='')
+
+    if len(h) < rows[-1] + 1:
+        print("Error, subrows of the matrix out of range.", file=sys.stderr)
+        return
+    if len(h[0]) < cols[-1] + 1:
+        print("Error, subcolumns of the matrix out of range.", file=sys.stderr)
+        return
+
+    for col in cols:
+        print(f"       |{col:2d}>  ", end='')
     print('\n', end='')
 
     flt_fmt = '+1.2f'
-    for i, row in enumerate(h):
-        print(f"{i:2d}: ", end='')
-        for x in row:
+    empty = ' ' * 5
+    for row in rows:
+        print(f"<{row:2d}|", end='')
+        for x in h[row][cols[0]:cols[-1]+1]:
             if abs(x.real) < 0.001:
-                if abs(x.imag) < 0.001:
-                    print("(     ,     )", end='')
-                else:
-                    print(f"(     ,{x.imag:{flt_fmt}})", end='')
-            elif abs(x.imag) < 0.001:
-                print(f"({x.real:{flt_fmt}},     )", end='')
+                real = empty
             else:
-                print(f"({x.real:{flt_fmt}},{x.imag:{flt_fmt}})", end='')
+                real = f'{x.real:{flt_fmt}}'
+
+            if abs(x.imag) < 0.001:
+                imag = empty
+            else:
+                imag = f'{x.imag:{flt_fmt}}'
+
+            print(f"({real},{imag})", end='')
         print("\n", end='')
 
 
@@ -111,18 +136,21 @@ def print_matrix(h, title: str = ""):
     print('\n', end='')
 
     flt_fmt = '+1.2f'
+    empty = ' ' * 5
     for i, row in enumerate(h):
         print(f"<{i:2d}|", end='')
         for x in row:
             if abs(x.real) < 0.001:
-                if abs(x.imag) < 0.001:
-                    print("(     ,     )", end='')
-                else:
-                    print(f"(     ,{x.imag:{flt_fmt}})", end='')
-            elif abs(x.imag) < 0.001:
-                print(f"({x.real:{flt_fmt}},     )", end='')
+                real = empty
             else:
-                print(f"({x.real:{flt_fmt}},{x.imag:{flt_fmt}})", end='')
+                real = f'{x.real:{flt_fmt}}'
+
+            if abs(x.imag) < 0.001:
+                imag = empty
+            else:
+                imag = f'{x.imag:{flt_fmt}}'
+
+            print(f"({real},{imag})", end='')
         print("\n", end='')
 
 
@@ -221,13 +249,7 @@ def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
         soc_matrix[bra_pos[0]:bra_pos[1], ket_pos[0]:ket_pos[1]] = mel
         mel_hc = np.conjugate(mel.T)
         soc_matrix[ket_pos[0]:ket_pos[1], bra_pos[0]:bra_pos[1]] = mel_hc
-        print(f"{bra_pos=}")
-        print(f"{ket_pos=}")
-        print(f"{mel=}")
-        print(f"{mel_hc=}")
 
-    print_states_positions(states)
-    print_matrix(soc_matrix, title="SOCs + diagonal energies")
     return soc_matrix
 
 
@@ -249,22 +271,75 @@ def find_largest_soc(socs):
         print(soc['matrix'])
 
 
+def prepare_subblock_ranges(args, dim):
+    rows = [i for i in range(dim)]
+    cols = [i for i in range(dim)]
+
+    if args.subblock is None:
+        return rows, cols
+
+    subblocks = args.subblock
+    if ',' not in subblocks:
+        print("Error, incorrect subblocks. Try X,X or X,AB.",
+              file=sys.stderr)
+        return
+    rows_str, cols_str = args.subblock.split(',')
+    ranges = {
+        'X': [i for i in range(4)],
+        'A': [i for i in range(4, 12)],
+        'B': [i for i in range(12, 20)],
+    }
+
+    rows = []
+    for lttr in rows_str:
+        rows += ranges[lttr]
+    rows.sort()
+
+    cols = []
+    for lttr in cols_str:
+        cols += ranges[lttr]
+    cols.sort()
+    return rows, cols
+
+
 def main():
-    states = mol1.states
+    args = get_args()
+    # The data file is a python script that contains
+    # only definitions of variables: states, ref2eom and eom2eom
+    data = {}
+    with open(args.data) as data_file:
+        exec(data_file.read(), globals(), data)
+
+    states = data['states']
+    # This function changes the states dictionary by adding the 'position' key
+    # to every states
     dim = introduce_order(states)
-    socs_ref2eom = mol1.ref2eom
-    socs_eom2eom = mol1.eom2eom
+
+    socs_ref2eom = data['ref2eom']
+    socs_eom2eom = data['eom2eom']
     add_order_to_SOC(states, socs_ref2eom)
     add_order_to_SOC(states, socs_eom2eom)
     socs_aggregate = socs_ref2eom + socs_eom2eom
-    hamiltonian = construct_Hamiltonian_matrix(dim, states, socs_aggregate)
-    evalues, evectors = np.linalg.eigh(hamiltonian)
-    for n, e in enumerate(evalues):
-        print(f"{e:9.3f} cm-1"
-              f" = {e*cm2eV:6.3f} eV"
-              f"\t\t{print_vector_latex(evectors[:, n], polar=True)}")
 
-    find_largest_soc(socs_aggregate)
+    hamiltonian = construct_Hamiltonian_matrix(dim, states, socs_aggregate)
+
+    print_states_positions(states)
+
+    rows, cols = prepare_subblock_ranges(args, dim)
+    print_submatrix(hamiltonian, rows, cols, title="SOCs + diagonal energies")
+
+    evalues, evectors = np.linalg.eigh(hamiltonian)
+
+    for id in cols:
+        energy = evalues[id]
+        vector = evectors[:, id]
+        print(f"{id:2d}: {energy:9.3f} cm-1"
+              f" = {energy*cm2eV:6.3f} eV"
+              f"\t\t{print_vector_latex(vector, polar=True)}")
+
+    if args.show_largest is True:
+        find_largest_soc(socs_aggregate)
+
     # for i, v in enumerate(evectors[:, 2]):
     #     if abs(v) > 0.1:
     #         print(f"{i:2d}: {v.real:+.2f}{v.imag:+.2f}i")

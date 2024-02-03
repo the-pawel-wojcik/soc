@@ -59,14 +59,15 @@ def print_vector_latex(v,
     vector.sort(key=lambda z: abs(z[1]), reverse=True)
     small_contributions = False
     output = ""
+    output += "$"
     for coeff in vector:
         norm = abs(coeff[1])
         if norm > norm_threshold:
-            output += "$"
             if polar:
                 phi = m.phase(coeff[1]) / m.pi
                 output += f"{norm:4.3f}"
-                output += r"e^{" + f"{phi:+3.2f}" + r"\pi i} "
+                if phi > 0.01:
+                    output += r"e^{" + f"{phi:+3.2f}" + r"\pi i} "
             else:
                 output += f"{coeff[1].real:+3.2f}"
                 output += f"{coeff[1].imag:+3.2f}i"
@@ -78,16 +79,17 @@ def print_vector_latex(v,
             else:
                 output += f"{coeff[0]:2d}"
             output += "}"
-            output += "$ "
+            output += " "
             if polar:
                 output += "+ "
         elif norm > 1e-16:
             small_contributions = True
     if small_contributions:
         if polar:
-            output += r"\ldots "
+            output += r"\ldots"
         else:
-            output += r"$+$ \ldots "
+            output += r"+ \ldots"
+    output += "$"
     return output
 
 

@@ -162,14 +162,26 @@ def print_matrix(h, title: str = ""):
 
 
 def print_states_positions(states):
+    state_id2name = {}
     for state in states:
         irrep = state['irrep']
         multiplicity = state['multiplicity']
         pos = state['position']
         first = pos[0]
         last = pos[1]
-        for p in range(first, last):
-            print(f"|{p:2d}> = |{irrep}, {multiplicity}>")
+        for n, p in enumerate(range(first, last)):
+            # s > 0 by definition
+            # spin_z goes from -s up to s
+            # multiplicity is 2s+1
+            # s = 0.5 * (multiplicity - 1)
+            spin_z = - (multiplicity - 1) // 2 + n
+            print(f"|{p:2d}> = |{irrep}, {multiplicity}, {spin_z}>")
+            state_id2name[p] = {
+                "irrep": irrep,
+                "multiplicity": multiplicity,
+                "spin_z": spin_z,
+            }
+    return state_id2name
 
 
 def introduce_order(states):
@@ -370,7 +382,10 @@ def main():
 
     hamiltonian = construct_Hamiltonian_matrix(dim, states, socs_aggregate)
 
-    print_states_positions(states)
+    state_id2name = print_states_positions(states)
+    if args.eigenvectors != "":
+        for key, value in state_id2name.items():
+            print(f"{key}: {value}")
 
     rows, cols = prepare_subblock_ranges(args, dim)
     print_submatrix(hamiltonian, rows, cols, title="SOCs + diagonal energies")

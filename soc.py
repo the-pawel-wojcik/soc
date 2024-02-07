@@ -66,7 +66,7 @@ def print_vector_latex(v,
             if polar:
                 phi = m.phase(coeff[1]) / m.pi
                 output += f"{norm:4.3f}"
-                if phi > 0.01:
+                if abs(phi) > 0.01:
                     output += r"e^{" + f"{phi:+3.2f}" + r"\pi i} "
             else:
                 output += f"{coeff[1].real:+3.2f}"
@@ -335,7 +335,7 @@ def main():
     for id in cols:
         energy = evalues[id]
         vector = evectors[:, id]
-        print(f"{id:2d}: {energy:9.3f} cm-1"
+        print(f"{id:2d}: {energy:9.2f} cm-1"
               f" = {energy*cm2eV:6.3f} eV"
               f"\t\t{print_vector_latex(vector, polar=True)}")
 

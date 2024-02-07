@@ -18,10 +18,15 @@ cm2eV = 1.0/eV2cm
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('data')
-    parser.add_argument('-l', '--show_largest',
-                        default=False, action='store_true')
     parser.add_argument('-b', '--subblock', default=None,
                         type=str, help="columns,rows use XAB")
+    parser.add_argument('-e', '--eigenvectors', default="", type=str,
+                        help="Print eigenvectors, 'a' for ascii 'l' for latex."
+                        )
+    parser.add_argument('-l', '--show_largest',
+                        default=False, action='store_true')
+    parser.add_argument('-t', '--threshold', default=0.1,
+                        type=float, help="Print threshold")
     args = parser.parse_args()
     return args
 
@@ -304,6 +309,46 @@ def prepare_subblock_ranges(args, dim):
     return rows, cols
 
 
+LATEX_TABLE_HEADER = r"""
+\begin{tabular}{cccc}
+\hline
+id & $E _{ex}$, cm$^{-1}$ & $E _{ex}$, eV & eigenvector \\
+\hline"""
+
+LATEX_TABLE_TAIL = r"""
+\hline
+\end{tabular}"""
+
+
+def deal_with_spectrum_printing(args, cols, evalues, evectors):
+
+    if args.eigenvectors == "":
+        return
+
+    print("\n")
+    if "l" in args.eigenvectors:
+        print(LATEX_TABLE_HEADER)
+
+    for id in cols:
+        energy = evalues[id]
+        vector = evectors[:, id]
+        print_threshold = args.threshold
+        vector_str = print_vector_latex(
+            vector, polar=True, norm_threshold=print_threshold)
+        if "a" in args.eigenvectors:
+            print(f"{id:2d}: {energy:9.2f} cm-1"
+                  f" = {energy*cm2eV:6.3f} eV"
+                  f"\t\t{vector_str}")
+        elif "l" in args.eigenvectors:
+            print(f"{id:2d} & "
+                  f"{energy:9.2f} & "
+                  f"{energy*cm2eV:6.3f} & "
+                  f"{vector_str} \\\\")
+
+    if "l" in args.eigenvectors:
+        print(LATEX_TABLE_TAIL)
+
+
 def main():
     args = get_args()
     # The data file is a python script that contains
@@ -332,12 +377,7 @@ def main():
 
     evalues, evectors = np.linalg.eigh(hamiltonian)
 
-    for id in cols:
-        energy = evalues[id]
-        vector = evectors[:, id]
-        print(f"{id:2d}: {energy:9.2f} cm-1"
-              f" = {energy*cm2eV:6.3f} eV"
-              f"\t\t{print_vector_latex(vector, polar=True)}")
+    deal_with_spectrum_printing(args, cols, evalues, evectors)
 
     if args.show_largest is True:
         find_largest_soc(socs_aggregate)

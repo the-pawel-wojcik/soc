@@ -93,8 +93,21 @@ def print_vector_latex(v,
         if norm > norm_threshold:
             if polar:
                 phi = m.phase(coeff[1]) / m.pi
-                output += f"{norm:4.3f}"
-                if abs(phi) > 0.01:
+                # Positive number on the real axis
+                if abs(phi) < 0.01:
+                    output += f"+{norm:4.3f}"
+                # Negative number on the real axis
+                elif abs(phi) > 0.95 and abs(phi) < 1.05:
+                    output += f"-{norm:4.3f}"
+                # On the imaginary axis up
+                elif phi > 0.45 and phi < 0.55:
+                    output += f"+{norm:4.3f}i"
+                # On the imaginary axis down
+                elif phi < -0.45 and phi > -0.55:
+                    output += f"-{norm:4.3f}i"
+                # The number does not lie on any axis – need to show the phase
+                else:
+                    output += f"{norm:+4.3f}"
                     output += r"e^{" + f"{phi:+3.2f}" + r"\pi i} "
             else:
                 output += f"{coeff[1].real:+3.2f}"
@@ -108,16 +121,16 @@ def print_vector_latex(v,
                 output += f"{coeff[0]:2d}"
             output += "}"
             output += " "
-            if polar:
-                output += "+ "
-        elif norm > 1e-16:
+        elif norm**2 > 5e-4:
             small_contributions = True
     if small_contributions:
-        if polar:
-            output += r"\ldots"
-        else:
-            output += r"+ \ldots"
+        output += r"+ \ldots"
     output += "$"
+
+    # trim the leading + sign
+    if output[1] == "+":
+        output = "$" + output[2:]
+
     return output
 
 
@@ -344,14 +357,12 @@ def prepare_subblock_ranges(args, dim):
     return rows, cols
 
 
-LATEX_TABLE_HEADER = r"""
-\begin{tabular}{|c|r|r|l|}
+LATEX_TABLE_HEADER = r"""\begin{tabular}{|c|r|r|l|}
 \hline
 id & $E _{ex}$, cm$^{-1}$ & $E _{ex}$, eV & eigenvector \\
 \hline"""
 
-LATEX_TABLE_TAIL = r"""
-\hline
+LATEX_TABLE_TAIL = r"""\hline
 \end{tabular}"""
 
 

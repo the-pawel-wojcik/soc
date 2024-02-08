@@ -23,6 +23,9 @@ def get_args():
     parser.add_argument('-e', '--eigenvectors', default="", type=str,
                         help="Print eigenvectors, 'a' for ascii 'l' for latex."
                         )
+    parser.add_argument('-H', '--Hamiltonian', default=False,
+                        action='store_true',
+                        help="Print the Hamiltonian matrix.")
     parser.add_argument('-l', '--show_largest',
                         default=False, action='store_true')
     parser.add_argument('-t', '--threshold', default=0.1,
@@ -250,6 +253,11 @@ def find_positions(new, knowns):
 
 
 def add_order_to_SOC(states, socs):
+    """
+    Edits the `socs` elements by adding to their `bra` and `ket` dictionaries
+    the `position` key. The `position` value is the range of indices that the
+    states are assigned to in the state interaction Hamiltonian.
+    """
     for soc in socs:
         bra = soc['bra']
         bra_pos = find_positions(bra, states)
@@ -427,18 +435,26 @@ def main():
     # to every states
     dim = introduce_order(states)
 
+    # In the model EOM that I have used the CCSD reference state was one of the
+    # target states. There are thus two sets of transition properties:
+    # REF <--> EOM and EOM <--> EOM
+    # Despite the need for a separate calculations, both sets of data
+    # correspond to transitions between states of interests.
     socs_ref2eom = data['ref2eom']
     socs_eom2eom = data['eom2eom']
-    add_order_to_SOC(states, socs_ref2eom)
-    add_order_to_SOC(states, socs_eom2eom)
     socs_aggregate = socs_ref2eom + socs_eom2eom
+
+    add_order_to_SOC(states, socs_aggregate)
 
     hamiltonian = construct_Hamiltonian_matrix(dim, states, socs_aggregate)
 
     state_id2name = print_states_positions(states)
 
     rows, cols = prepare_subblock_ranges(args, dim)
-    print_submatrix(hamiltonian, rows, cols, title="SOCs + diagonal energies")
+
+    if args.Hamiltonian is True:
+        print_submatrix(hamiltonian, rows, cols,
+                        title="SOCs + diagonal energies")
 
     evalues, evectors = np.linalg.eigh(hamiltonian)
 

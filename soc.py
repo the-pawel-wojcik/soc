@@ -31,6 +31,29 @@ def get_args():
     return args
 
 
+def state2latex(state):
+    irrep = state['irrep']
+    irrepN, irrep_lbl = irrep.split('/')
+
+    irrep_lttr = irrep_lbl[0]
+    irrep_decorator = ""
+    irrep_extra = irrep_lbl[1:]
+    if irrep_extra == "":
+        irrep_decorator = ""
+    elif irrep_extra == "'":
+        irrep_decorator = r' ^{\prime}'
+    elif irrep_extra == '"':
+        irrep_decorator = r' ^{\prime\prime}'
+    else:
+        irrep_decorator = r' _{' + irrep_extra + '}'
+
+    multiplicity = state['multiplicity']
+    spin_z = state['spin_z']
+    out = r'\ket{' + irrepN + ' ^{' + str(multiplicity) + '} '
+    out += irrep_lttr + irrep_decorator + ', ' + f"{spin_z:2d}" + '}'
+    return out
+
+
 def print_vector_latex(v,
                        already_sorted: bool = False,
                        polar: bool = False,
@@ -322,7 +345,7 @@ def prepare_subblock_ranges(args, dim):
 
 
 LATEX_TABLE_HEADER = r"""
-\begin{tabular}{cccc}
+\begin{tabular}{|c|r|r|l|}
 \hline
 id & $E _{ex}$, cm$^{-1}$ & $E _{ex}$, eV & eigenvector \\
 \hline"""
@@ -332,10 +355,29 @@ LATEX_TABLE_TAIL = r"""
 \end{tabular}"""
 
 
-def deal_with_spectrum_printing(args, cols, evalues, evectors):
+LATEX_TABLE_HEADER_EXTRA = r"""
+\begin{tabular}{|l|l|}
+\hline
+nickname & state \\
+\hline"""
+
+
+def deal_with_spectrum_printing(args, cols, evalues, evectors, state_id2name):
 
     if args.eigenvectors == "":
         return
+
+    if 'l' in args.eigenvectors:
+        print(LATEX_TABLE_HEADER_EXTRA)
+        for col in cols:
+            line = r'$\ket{' + f"{col:2d}" + r'}$'
+            line += " & "
+            line += "$"
+            line += state2latex(state_id2name[col])
+            line += "$"
+            line += r' \\'
+            print(line)
+        print(LATEX_TABLE_TAIL)
 
     print("\n")
     if "l" in args.eigenvectors:
@@ -383,25 +425,16 @@ def main():
     hamiltonian = construct_Hamiltonian_matrix(dim, states, socs_aggregate)
 
     state_id2name = print_states_positions(states)
-    if args.eigenvectors != "":
-        for key, value in state_id2name.items():
-            print(f"{key}: {value}")
 
     rows, cols = prepare_subblock_ranges(args, dim)
     print_submatrix(hamiltonian, rows, cols, title="SOCs + diagonal energies")
 
     evalues, evectors = np.linalg.eigh(hamiltonian)
 
-    deal_with_spectrum_printing(args, cols, evalues, evectors)
+    deal_with_spectrum_printing(args, cols, evalues, evectors, state_id2name)
 
     if args.show_largest is True:
         find_largest_soc(socs_aggregate)
-
-    # for i, v in enumerate(evectors[:, 2]):
-    #     if abs(v) > 0.1:
-    #         print(f"{i:2d}: {v.real:+.2f}{v.imag:+.2f}i")
-    #     else:
-    #         print(f"{i:2d}: 0")
 
 
 if __name__ == "__main__":

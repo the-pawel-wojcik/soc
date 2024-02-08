@@ -300,7 +300,7 @@ def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
     for soc in socs_aggregate:
         bra_pos = soc['bra']['position']
         ket_pos = soc['ket']['position']
-        mel = np.array(soc['matrix'], dtype=np.cdouble)
+        mel = np.array(soc['H SO'], dtype=np.cdouble)
         soc_matrix[bra_pos[0]:bra_pos[1], ket_pos[0]:ket_pos[1]] = mel
         mel_hc = np.conjugate(mel.T)
         soc_matrix[ket_pos[0]:ket_pos[1], bra_pos[0]:bra_pos[1]] = mel_hc
@@ -309,7 +309,7 @@ def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
 
 
 def soc_max_helper(soc):
-    matrix = soc['matrix']
+    matrix = soc['H SO']
     row_maxes = [max(row, key=lambda z: abs(z)) for row in matrix]
     matrix_max_value = max(row_maxes, key=lambda z: abs(z))
     return abs(matrix_max_value)
@@ -323,7 +323,7 @@ def find_largest_soc(socs):
         print(f"Position {i}")
         print(f"ket: {soc['ket']['irrep']} {soc['ket']['multiplicity']}")
         print(f"bra: {soc['bra']['irrep']} {soc['bra']['multiplicity']}")
-        print(soc['matrix'])
+        print(soc['H SO'])
 
 
 def prepare_subblock_ranges(args, dim):

@@ -102,8 +102,8 @@ def parse_SOC_section(prop):
 
     # tdm = transition dipole moment
     # Q-Chem reports tdms for pairs of states
-    # what I call tdm_left is in Q-Chem labelled as A->B
-    # and what I call tdm_right in Q-Chem is called B->A
+    # what I call B_tdm_A is in Q-Chem labelled as A->B
+    # and what I call A_tdm_B in Q-Chem is called B->A
     # these must correspond to:
     # <state_A| d | state_B> and <state_B| d |state_A>
     # but I don't know which one is which.
@@ -119,36 +119,36 @@ def parse_SOC_section(prop):
 
     ln += 1
     content = prop[ln].split()
-    tdm_left = float(content[1])
-    vec_tdm_left = dict()
-    vec_tdm_left["x"] = float(content[3][:-1])  # [:-1] trailing comma
-    vec_tdm_left["y"] = float(content[5][:-1])  # [:-1] trailing comma
-    vec_tdm_left["z"] = float(content[7][:-1])  # [:-1] trailing ")"
+    B_tdm_A = float(content[1])
+    vec_B_tdm_A = dict()
+    vec_B_tdm_A["x"] = float(content[3][:-1])  # [:-1] trailing comma
+    vec_B_tdm_A["y"] = float(content[5][:-1])  # [:-1] trailing comma
+    vec_B_tdm_A["z"] = float(content[7][:-1])  # [:-1] trailing ")"
 
     ln += 1
     content = prop[ln].split()
-    tdm_right = float(content[1])
-    vec_tdm_right = dict()
-    vec_tdm_right["x"] = float(content[3][:-1])  # [:-1] trailing comma
-    vec_tdm_right["y"] = float(content[5][:-1])  # [:-1] trailing comma
-    vec_tdm_right["z"] = float(content[7][:-1])  # [:-1] trailing ")"
+    A_tdm_B = float(content[1])
+    vec_A_tdm_B = dict()
+    vec_A_tdm_B["x"] = float(content[3][:-1])  # [:-1] trailing comma
+    vec_A_tdm_B["y"] = float(content[5][:-1])  # [:-1] trailing comma
+    vec_A_tdm_B["z"] = float(content[7][:-1])  # [:-1] trailing ")"
 
     # the geometric average of the left and right tdms
     # TODO: remove the averaging from here:
     # The parser should only read the input. Any post-processing
     # like finding the averaged tdm should be separated from parsing.
 
-    tdm = pow(tdm_left * tdm_right, 0.5)
+    tdm = pow(B_tdm_A * A_tdm_B, 0.5)
     data["tdm"] = tdm
 
     # arithmetic average of their components
     vec_tdm = dict()
-    for xyz in vec_tdm_left.keys():
-        vec_tdm[xyz] = 0.5 * (vec_tdm_left[xyz] + vec_tdm_right[xyz])
+    for xyz in vec_B_tdm_A.keys():
+        vec_tdm[xyz] = 0.5 * (vec_B_tdm_A[xyz] + vec_A_tdm_B[xyz])
 
     data["vec tdm"] = vec_tdm
-    data["vec tdm_left"] = vec_tdm_left
-    data["vec tdm_right"] = vec_tdm_right
+    data["vec B_tdm_A"] = vec_B_tdm_A
+    data["vec A_tdm_B"] = vec_A_tdm_B
 
     ln = skip_to(r"Oscillator strength", prop, ln)
     content = prop[ln].split()
@@ -193,7 +193,7 @@ def parse_SOC_section(prop):
     #           "don't exceed total memory.")
     #     self.soc_invalid = True
 
-    # SOC A->B
+    # SOC A(ket) -> B(bra), i.e., <B| H_SO |A>
     try:
         ln = skip_to(r'\s*A\(Ket\)->B\(Bra\) transition SO matrices', prop, ln)
     except Exception:
@@ -253,7 +253,7 @@ def parse_SOC_section(prop):
             imag_part = float(imag_part)
             matrix[row_number][column_number] = real_part + 1.0j * imag_part
 
-    data["SOC"] = {"matrix": matrix, "|ket>": "State A", "<bra|": "State B"}
+    data["SOC"] = {"<B|H _SO|A>": matrix}
     return data
 
 
@@ -287,11 +287,10 @@ def main():
     out_data = []
     for transition in transition_props:
         soc = transition['SOC']
-        bra_id = soc['<bra|']
-        bra = transition[bra_id]
-        ket_id = soc['|ket>']
-        ket = transition[ket_id]
-        matrix = soc['matrix']
+        bra = transition['State B']
+        ket = transition['State A']
+        matrix = soc['<B|H _SO|A>']
+        tdm = transition['vec B_tdm_A']
         out_data += [
             {
                 'bra': {
@@ -302,7 +301,8 @@ def main():
                     'irrep': ket['name'].split()[-1],
                     'multiplicity': ket['multiplicity'],
                 },
-                'matrix': matrix,
+                'H SO': matrix,
+                'tdm': tdm,
             },
         ]
     print(out_data)

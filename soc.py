@@ -128,6 +128,52 @@ def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
     return soc_matrix
 
 
+def construct_tdms_matrix(dim, states, trans_props_aggregate):
+    """
+    Constructs a matrix of the transition dipole moments.
+
+    Returns:
+        None.
+
+    USE:
+    tdms_matrix = construct_tdms_matrix(dim, states, socs_aggregate)
+
+    """
+
+    # TDMs have three components each of them gets its own matrix
+    tdms_matrix = {
+        key: np.zeros((dim, dim)) for key in ["x", "y", "z"]}
+
+    """
+    TODO: Add state's dipole moments.
+    """
+
+    """
+    Add transition dipole moments
+    """
+
+    for trans_prop in trans_props_aggregate:
+        bra_pos = trans_prop['bra']['position']
+        ket_pos = trans_prop['ket']['position']
+        dim_bra = trans_prop['bra']['multiplicity']
+        dim_ket = trans_prop['ket']['multiplicity']
+        tdm_vec = trans_prop['tdm']
+
+        for cart in ["x", "y", "z"]:
+            tdm = tdm_vec[cart]
+            # build a submatrix of tdms
+            # It contains the same TDM value as its entry
+            mel = tdm * np.ones(shape=(dim_bra, dim_ket))
+
+            tdms_matrix[cart][bra_pos[0]:bra_pos[1],
+                              ket_pos[0]:ket_pos[1]] = mel
+            # for some reason TDMs are real
+            tdms_matrix[cart][ket_pos[0]:ket_pos[1],
+                              bra_pos[0]:bra_pos[1]] = mel.T
+
+    return tdms_matrix
+
+
 def soc_max_helper(soc):
     matrix = soc['H SO']
     row_maxes = [max(row, key=lambda z: abs(z)) for row in matrix]
@@ -195,13 +241,14 @@ def main():
     # REF <--> EOM and EOM <--> EOM
     # Despite the need for a separate calculations, both sets of data
     # correspond to transitions between states of interests.
-    socs_ref2eom = data['ref2eom']
-    socs_eom2eom = data['eom2eom']
-    socs_aggregate = socs_ref2eom + socs_eom2eom
+    trans_props_ref2eom = data['ref2eom']
+    trans_props_eom2eom = data['eom2eom']
+    trans_props = trans_props_ref2eom + trans_props_eom2eom
 
-    add_order_to_SOC(states, socs_aggregate)
+    add_order_to_SOC(states, trans_props)
 
-    hamiltonian = construct_Hamiltonian_matrix(dim, states, socs_aggregate)
+    hamiltonian = construct_Hamiltonian_matrix(dim, states, trans_props)
+    tdms = construct_tdms_matrix(dim, states, trans_props)
 
     rows, cols = prepare_subblock_ranges(args, dim)
 
@@ -214,7 +261,7 @@ def main():
     pr.deal_with_spectrum_printing(args, cols, evalues, evectors, states)
 
     if args.show_largest is True:
-        find_largest_soc(socs_aggregate)
+        find_largest_soc(trans_props)
 
 
 if __name__ == "__main__":

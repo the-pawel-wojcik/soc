@@ -155,6 +155,7 @@ def get_stateID_to_name_dict(states):
         irrep = state['irrep']
         multiplicity = state['multiplicity']
         pos = state['position']
+        e_ex_eV = state['energy']['E ex']['eV']
         first = pos[0]
         last = pos[1]
         for n, p in enumerate(range(first, last)):
@@ -168,13 +169,18 @@ def get_stateID_to_name_dict(states):
                 "irrep": irrep,
                 "multiplicity": multiplicity,
                 "spin_z": spin_z,
+                "energy eV": e_ex_eV,
             }
     return stateID2name
 
 
-LATEX_TABLE_HEADER = r"""\begin{tabular}{|c|r|r|l|}
+# LATEX_TABLE_HEADER = r"""\begin{tabular}{|c|r|r|l|}
+# \hline
+# id & $E _{ex}$, cm$^{-1}$ & $E _{ex}$, eV & eigenvector \\
+# \hline"""
+LATEX_TABLE_HEADER_OLD = r"""\begin{tabular}{|c|r|l|}
 \hline
-id & $E _{ex}$, cm$^{-1}$ & $E _{ex}$, eV & eigenvector \\
+id & $E _{ex}$, cm$^{-1}$ & eigenvector \\
 \hline"""
 
 LATEX_TABLE_TAIL = r"""\hline
@@ -182,13 +188,13 @@ LATEX_TABLE_TAIL = r"""\hline
 
 
 LATEX_TABLE_HEADER_EXTRA = r"""
-\begin{tabular}{|l|l|}
+\begin{tabular}{|l|l|r|}
 \hline
-nickname & state \\
+label & state & $E _{ex}$, cm$^{-1}$ \\
 \hline"""
 
 
-def deal_with_spectrum_printing(args, cols, evalues, evectors, states):
+def deal_with_spectrum_printing_old(args, cols, evalues, evectors, states):
     """
     Prints the eigenvectors of the state interaction Hamiltonian.
     """
@@ -206,6 +212,8 @@ def deal_with_spectrum_printing(args, cols, evalues, evectors, states):
             line += "$"
             line += state2latex(state_id2name[col])
             line += "$"
+            line += " & "
+            line += f"{state_id2name[col]['energy eV'] * eV2cm:9.2f}"
             line += r' \\'
             print(line)
         print(LATEX_TABLE_TAIL)
@@ -227,8 +235,63 @@ def deal_with_spectrum_printing(args, cols, evalues, evectors, states):
         elif "l" in args.eigenvectors:
             print(f"{id:2d} & "
                   f"{energy:9.2f} & "
-                  f"{energy*cm2eV:6.3f} & "
+                  # f"{energy*cm2eV:6.3f} & "
                   f"{vector_str} \\\\")
+
+    if "l" in args.eigenvectors:
+        print(LATEX_TABLE_TAIL)
+
+
+LATEX_TABLE_HEADER = r"""\begin{tabular}{|r|l|r|r|l|}
+\hline
+id &
+EOM state &
+$E _{ex}$&
+$\Delta E ^{SOC}$&
+SOC-corrected eigenvector \\
+\hline"""
+
+
+def deal_with_spectrum_printing(args, cols, evalues, evectors, states):
+    """
+    Prints the eigenvectors of the state interaction Hamiltonian.
+    """
+
+    if args.eigenvectors == "":
+        return
+
+    state_id2name = get_stateID_to_name_dict(states)
+
+    if "l" in args.eigenvectors:
+        print(LATEX_TABLE_HEADER)
+
+    for id in cols:
+        soc_energy = evalues[id]
+        vector = evectors[:, id]
+        print_threshold = args.threshold
+        vector_str = print_vector_latex(
+            vector, polar=True, norm_threshold=print_threshold)
+        if "a" in args.eigenvectors:
+            print(f"{id:2d}: {soc_energy:9.2f} cm-1"
+                  f" = {soc_energy*cm2eV:6.3f} eV"
+                  f"\t\t{vector_str}")
+        elif "l" in args.eigenvectors:
+            # ket's name
+            line = r'$\ket{' + f"{id:2d}" + r'}$'
+            line += " & "
+            line += "$"
+            line += state2latex(state_id2name[id])
+            line += "$"
+            line += " & "
+            ref_energy = state_id2name[id]['energy eV'] * eV2cm
+            line += f"{ref_energy:9.2f}"
+            line += " & "
+            soc_correction = soc_energy - ref_energy
+            line += f"{soc_correction:9.2f} & "
+            # line += f"{energy*cm2eV:6.3f} & "
+            line += f"{vector_str} "
+            line += r' \\'
+            print(line)
 
     if "l" in args.eigenvectors:
         print(LATEX_TABLE_TAIL)

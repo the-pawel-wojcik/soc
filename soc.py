@@ -11,6 +11,7 @@ import sys
 import numpy as np
 
 import printing as pr
+import plt_soc
 
 eV2cm = 8065.479
 cm2eV = 1.0/eV2cm
@@ -249,6 +250,7 @@ def main():
 
     hamiltonian = construct_Hamiltonian_matrix(dim, states, trans_props)
     tdms = construct_tdms_matrix(dim, states, trans_props)
+    plt_soc.show_tdms(tdms)
 
     rows, cols = prepare_subblock_ranges(args, dim)
 

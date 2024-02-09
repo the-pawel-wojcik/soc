@@ -20,27 +20,27 @@ ref2eom = [
     {
         'bra': {'irrep': '1/B1g', 'multiplicity': 3},
         'ket': {'irrep': '1/Ag', 'multiplicity': 1},
-        'matrix': [[0j], [-18.567355j], [0j]]
+        'H SO': [[0j], [-18.567355j], [0j]]
     },
     {
         'bra': {'irrep': '1/B2g', 'multiplicity': 3},
         'ket': {'irrep': '1/Ag', 'multiplicity': 1},
-        'matrix': [[(13.139815+0j)], [0j], [(13.139815+0j)]]
+        'H SO': [[(13.139815+0j)], [0j], [(13.139815+0j)]]
     },
     {
         'bra': {'irrep': '1/B1u', 'multiplicity': 3},
         'ket': {'irrep': '1/Ag', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [(-0+0j)]]
+        'H SO': [[0j], [0j], [(-0+0j)]]
     },
     {
         'bra': {'irrep': '1/B2u', 'multiplicity': 3},
         'ket': {'irrep': '1/Ag', 'multiplicity': 1},
-        'matrix': [[(-0+0j)], [0j], [0j]]
+        'H SO': [[(-0+0j)], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B3u', 'multiplicity': 3},
         'ket': {'irrep': '1/Ag', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [0j]]
+        'H SO': [[0j], [0j], [0j]]
     }
 ]
 
@@ -50,101 +50,101 @@ eom2eom = [
     {
         'bra': {'irrep': '1/B1g', 'multiplicity': 3},
         'ket': {'irrep': '1/B1g', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [0j]]
+        'H SO': [[0j], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B2g', 'multiplicity': 3},
         'ket': {'irrep': '1/B1g', 'multiplicity': 1},
-        'matrix': [[17.867685j], [0j], [(-0-17.867685j)]]
+        'H SO': [[17.867685j], [0j], [(-0-17.867685j)]]
     },
     {
         'bra': {'irrep': '1/B1u', 'multiplicity': 3},
         'ket': {'irrep': '1/B1g', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [0j]]
+        'H SO': [[0j], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B2u', 'multiplicity': 3},
         'ket': {'irrep': '1/B1g', 'multiplicity': 1},
-        'matrix': [[(-0+0j)], [0j], [0j]]
+        'H SO': [[(-0+0j)], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B3u', 'multiplicity': 3},
         'ket': {'irrep': '1/B1g', 'multiplicity': 1},
-        'matrix': [[(-0+0j)], [0j], [0j]]
+        'H SO': [[(-0+0j)], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B1g', 'multiplicity': 3},
         'ket': {'irrep': '1/B2g', 'multiplicity': 1},
-        'matrix': [[17.886422j], [0j], [(-0-17.886422j)]]
+        'H SO': [[17.886422j], [0j], [(-0-17.886422j)]]
     },
     {
         'bra': {'irrep': '1/B2g', 'multiplicity': 3},
         'ket': {'irrep': '1/B2g', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [0j]]
+        'H SO': [[0j], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B1u', 'multiplicity': 3},
         'ket': {'irrep': '1/B2g', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [(-0+0j)]]
+        'H SO': [[0j], [0j], [(-0+0j)]]
     },
     {
         'bra': {'irrep': '1/B2u', 'multiplicity': 3},
         'ket': {'irrep': '1/B2g', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [(-0+0j)]]
+        'H SO': [[0j], [0j], [(-0+0j)]]
     },
     {
         'bra': {'irrep': '1/B3u', 'multiplicity': 3},
         'ket': {'irrep': '1/B2g', 'multiplicity': 1},
-        'matrix': [[(-0+0j)], [0j], [0j]]
+        'H SO': [[(-0+0j)], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B1g', 'multiplicity': 3},
         'ket': {'irrep': '1/B1u', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [0j]]
+        'H SO': [[0j], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B2g', 'multiplicity': 3},
         'ket': {'irrep': '1/B1u', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [0j]]
+        'H SO': [[0j], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B1u', 'multiplicity': 3},
         'ket': {'irrep': '1/B1u', 'multiplicity': 1},
-        'matrix': [[(-0+0j)], [0j], [0j]]
+        'H SO': [[(-0+0j)], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B2u', 'multiplicity': 3},
         'ket': {'irrep': '1/B1u', 'multiplicity': 1},
-        'matrix': [[-17.82835j], [0j], [17.82835j]]
+        'H SO': [[-17.82835j], [0j], [17.82835j]]
     },
     {
         'bra': {'irrep': '1/B3u', 'multiplicity': 3},
         'ket': {'irrep': '1/B1u', 'multiplicity': 1},
-        'matrix': [[(17.759186+0j)], [0j], [(17.759186+0j)]]
+        'H SO': [[(17.759186+0j)], [0j], [(17.759186+0j)]]
     },
     {
         'bra': {'irrep': '1/B1g', 'multiplicity': 3},
         'ket': {'irrep': '1/B2u', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [0j]]
+        'H SO': [[0j], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B2g', 'multiplicity': 3},
         'ket': {'irrep': '1/B2u', 'multiplicity': 1},
-        'matrix': [[0j], [0j], [0j]]
+        'H SO': [[0j], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B1u', 'multiplicity': 3},
         'ket': {'irrep': '1/B2u', 'multiplicity': 1},
-        'matrix': [[17.817355j], [0j], [(-0-17.817355j)]]
+        'H SO': [[17.817355j], [0j], [(-0-17.817355j)]]
     },
     {
         'bra': {'irrep': '1/B2u', 'multiplicity': 3},
         'ket': {'irrep': '1/B2u', 'multiplicity': 1},
-        'matrix': [[(-0+0j)], [0j], [0j]]
+        'H SO': [[(-0+0j)], [0j], [0j]]
     },
     {
         'bra': {'irrep': '1/B3u', 'multiplicity': 3},
         'ket': {'irrep': '1/B2u', 'multiplicity': 1},
-        'matrix': [[0j], [25.137672j], [0j]]
+        'H SO': [[0j], [25.137672j], [0j]]
     }
 ]

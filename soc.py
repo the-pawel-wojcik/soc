@@ -30,6 +30,8 @@ def get_args():
                         help="Print the Hamiltonian matrix.")
     parser.add_argument('-l', '--show_largest',
                         default=False, action='store_true')
+    parser.add_argument('-p', '--plot', default="", type=str,
+                        help='Plot t for TDMs.')
     parser.add_argument('-t', '--threshold', default=0.1,
                         type=float, help="Print threshold")
     args = parser.parse_args()
@@ -249,16 +251,26 @@ def main():
     add_order_to_SOC(states, trans_props)
 
     hamiltonian = construct_Hamiltonian_matrix(dim, states, trans_props)
+    evalues, evectors = np.linalg.eigh(hamiltonian)
     tdms = construct_tdms_matrix(dim, states, trans_props)
-    plt_soc.show_tdms(tdms)
 
+    # Output generation
     rows, cols = prepare_subblock_ranges(args, dim)
 
     if args.Hamiltonian is True:
         pr.print_submatrix(hamiltonian, rows, cols,
                            title="SOCs + diagonal energies")
 
-    evalues, evectors = np.linalg.eigh(hamiltonian)
+    if 't' in args.plot:
+        plt_soc.show_tdms(tdms)
+
+    if 'H' in args.plot:
+        plt_soc.show_Hamiltonian(hamiltonian,
+                                 title="the state-interaction Hamiltonian")
+        vHv = evectors.conjugate().transpose() @ hamiltonian @ evectors
+        plt_soc.show_Hamiltonian(vHv,
+                                 title="the state-interaction Hamiltonian"
+                                 "\nafter diagonalization.")
 
     pr.deal_with_spectrum_printing(args, cols, evalues, evectors, states)
 

@@ -16,6 +16,8 @@ import plt_soc
 eV2cm = 8065.479
 cm2eV = 1.0/eV2cm
 
+CARTESIAN = ["x", "y", "z"]
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -131,7 +133,7 @@ def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
     return soc_matrix
 
 
-def construct_tdms_matrix(dim, states, trans_props_aggregate):
+def construct_tdms_matrix_vec(dim, states, trans_props_aggregate):
     """
     Constructs a matrix of the transition dipole moments.
 
@@ -162,7 +164,7 @@ def construct_tdms_matrix(dim, states, trans_props_aggregate):
         dim_ket = trans_prop['ket']['multiplicity']
         tdm_vec = trans_prop['tdm']
 
-        for cart in ["x", "y", "z"]:
+        for cart in CARTESIAN:
             tdm = tdm_vec[cart]
             # build a submatrix of tdms
             # It contains the same TDM value as its entry
@@ -252,7 +254,17 @@ def main():
 
     hamiltonian = construct_Hamiltonian_matrix(dim, states, trans_props)
     evalues, evectors = np.linalg.eigh(hamiltonian)
-    tdms = construct_tdms_matrix(dim, states, trans_props)
+    tdms_vec = construct_tdms_matrix_vec(dim, states, trans_props)
+
+    # Find SOC-corrected transition dipole moments
+    soc_tdms_vec = {}
+    for cart in CARTESIAN:
+        soc_tdms_vec[cart] = \
+            evectors.conjugate().transpose() @ tdms_vec[cart] @ evectors
+
+    soc_tdms_abs2 = np.zeros(shape=(dim, dim), dtype=np.float32)
+    for cart in CARTESIAN:
+        soc_tdms_abs2 += np.power(np.abs(soc_tdms_vec[cart]), 2)
 
     # Output generation
     rows, cols = prepare_subblock_ranges(args, dim)
@@ -260,9 +272,6 @@ def main():
     if args.Hamiltonian is True:
         pr.print_submatrix(hamiltonian, rows, cols,
                            title="SOCs + diagonal energies")
-
-    if 't' in args.plot:
-        plt_soc.show_tdms(tdms)
 
     if 'H' in args.plot:
         plt_soc.show_Hamiltonian(hamiltonian,
@@ -273,6 +282,23 @@ def main():
                                  "\nafter diagonalization.")
 
     pr.deal_with_spectrum_printing(args, cols, evalues, evectors, states)
+
+    if 't' in args.plot:
+        for cart in CARTESIAN:
+            plt_soc.show_real_matrix(tdms_vec[cart], f"TDM {cart}")
+
+        for cart in CARTESIAN:
+            plt_soc.show_real_matrix(soc_tdms_vec[cart].real,
+                                     f"SOC-TDM {cart} real")
+            plt_soc.show_real_matrix(soc_tdms_vec[cart].imag,
+                                     f"SOC-TDM {cart} imag")
+
+        plt_soc.show_real_matrix(soc_tdms_abs2, "|SOC-TDM|$^2$")
+
+    if 'a' in args.eigenvectors:
+        print("SOC-corrected TDMs to the ground state, TDMs to the ground state")
+        for id, tdm in enumerate(soc_tdms_abs2[0, :]):
+            print(f"{id:2}: {tdm:7.3f}")
 
     if args.show_largest is True:
         find_largest_soc(trans_props)

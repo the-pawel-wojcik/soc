@@ -8,13 +8,13 @@ import numpy as np
 
 def show_Hamiltonian(hamiltonian, title: str = ""):
 
-    absH = np.log(1 + np.abs(hamiltonian))
+    absH = np.log10(1 + np.abs(hamiltonian))
     max_value = np.max(absH)
 
     fig, ax = plt.subplots(figsize=(3, 3))
 
     parameters = {
-        "vmin": -max_value,
+        "vmin": 0,
         "vmax": max_value,
         "center": 0.0,
         "cmap": "vlag",

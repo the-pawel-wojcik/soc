@@ -34,6 +34,8 @@ def get_args():
                         default=False, action='store_true')
     parser.add_argument('-p', '--plot', default="", type=str,
                         help='Plot t for TDMs.')
+    parser.add_argument('-r', '--branching_ratios', default=None, type=int,
+                        help="Show decay branching ratios from the state <#>")
     parser.add_argument('-t', '--threshold', default=0.1,
                         type=float, help="Print threshold")
     args = parser.parse_args()
@@ -295,10 +297,7 @@ def main():
 
         plt_soc.show_real_matrix(soc_tdms_abs2, "|SOC-TDM|$^2$")
 
-    if 'a' in args.eigenvectors:
-        print("SOC-corrected TDMs to the ground state, TDMs to the ground state")
-        for id, tdm in enumerate(soc_tdms_abs2[0, :]):
-            print(f"{id:2}: {tdm:7.3f}")
+    pr.print_branching_ratios(args, dim, evalues, soc_tdms_abs2)
 
     if args.show_largest is True:
         find_largest_soc(trans_props)

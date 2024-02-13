@@ -295,3 +295,37 @@ def deal_with_spectrum_printing(args, cols, evalues, evectors, states):
 
     if "l" in args.eigenvectors:
         print(LATEX_TABLE_TAIL)
+
+
+def print_branching_ratios(args, dim, evalues, soc_tdms_abs2):
+    if args.branching_ratios is None:
+        return
+
+    higher_state_id = args.branching_ratios
+    if higher_state_id < 0 or higher_state_id >= dim:
+        print("Invalid value of argument of --branching_ratios "
+              f"{higher_state_id}\n"
+              f"Only values from the range [0, {dim}) are allowed.",
+              file=sys.stderr)
+        return 1
+
+    state_energy = evalues[higher_state_id]
+    einsteins_As = list()
+    for lower_state_id in range(0, higher_state_id):
+        gap = state_energy - evalues[lower_state_id]
+        gap_cube = gap**3
+        tdm_square = soc_tdms_abs2[higher_state_id, lower_state_id]
+        einstein_A = gap_cube * tdm_square
+        einsteins_As.append(einstein_A)
+
+    einstein_As_sum = sum(einsteins_As)
+
+    print(f"Braching ratios from state #{higher_state_id}")
+    print("Lower state id, branching ratio, TDM^2 au , gap")
+    for lower_state_id, a in enumerate(einsteins_As):
+        tdm_square = soc_tdms_abs2[higher_state_id, lower_state_id]
+        gap = state_energy - evalues[lower_state_id]
+        print(f"{lower_state_id:14d}, "
+              f"{a/einstein_As_sum:15.3f}, "
+              f"{tdm_square:9.3f}, "
+              f"{gap:7.1f}")

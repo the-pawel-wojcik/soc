@@ -9,7 +9,7 @@ import re
 import sys
 
 
-def get_s_from_s2(s2):
+def get_s_from_s2(s2: float) -> float:
     """
     <S^2> = s(s+1)
     --> s = 0.5 * ( -1 + sqrt(1 + 4 <S^2>) )
@@ -18,7 +18,7 @@ def get_s_from_s2(s2):
         s2: float: <S^2>
 
     Returns:
-        s:
+        s: float
     """
 
     return 0.5 * (-1 + pow(1 + 4 * s2, 0.5))
@@ -197,7 +197,7 @@ def parse_SOC_section(prop):
     try:
         ln = skip_to(r'\s*A\(Ket\)->B\(Bra\) transition SO matrices', prop, ln)
     except Exception:
-        print("Error while parsing transition:", file=sys.stderr)
+        print("No SOCs in output for transition:", file=sys.stderr)
         print(f"\tState A: {state_A}", file=sys.stderr)
         print(f"\tState B: {state_B}", file=sys.stderr)
         return None
@@ -208,16 +208,16 @@ def parse_SOC_section(prop):
     pattern = re.compile(braket_re)
     ln += 4
     match = pattern.match(prop[ln])
-    ket_s2 = int(float(match.group(2)))
-    ket_s = int(get_s_from_s2(ket_s2))
-    ket_dim = 2 * ket_s + 1
+    ket_s2 = float(match.group(2))
+    ket_s = get_s_from_s2(ket_s2)
+    ket_dim = int(2 * ket_s) + 1
     data['State A']['<S^2>'] = ket_s2
     data['State A']['multiplicity'] = ket_dim
     ln += 1
     match = pattern.match(prop[ln])
     bra_s2 = float(match.group(2))
-    bra_s = int(get_s_from_s2(bra_s2))
-    bra_dim = 2 * bra_s + 1
+    bra_s = get_s_from_s2(bra_s2)
+    bra_dim = int(2 * bra_s) + 1
     data['State B']['<S^2>'] = bra_s2
     data['State B']['multiplicity'] = bra_dim
     ln += 1
@@ -273,47 +273,7 @@ def print_summary_of_transitions(transition_props):
 
 
 def main():
-    args = get_args()
-    with open(args.qchem_output) as qchem:
-        trans_props_lines = get_trans_props(qchem)
-
-    transition_props = []
-    for prop in trans_props_lines:
-        transition = parse_SOC_section(prop)
-        if transition is None:
-            continue
-        transition_props += [transition]
-
-    out_data = []
-    for transition in transition_props:
-        soc = transition['SOC']
-        bra = transition['State B']
-        ket = transition['State A']
-        matrix = soc['<B|H _SO|A>']
-        tdm = transition['vec B_tdm_A']
-        out_data += [
-            {
-                'bra': {
-                    'irrep': bra['name'].split()[-1],
-                    'multiplicity': bra['multiplicity'],
-                },
-                'ket': {
-                    'irrep': ket['name'].split()[-1],
-                    'multiplicity': ket['multiplicity'],
-                },
-                'H SO': matrix,
-                'tdm': tdm,
-            },
-        ]
-    print(out_data)
-
-
-if __name__ == "__main__":
-    main()
-
-
-# An example block that this script parses
-"""
+    """ An example of a q-chem output block that this script parses:
  ------------------------------------------------------------------------------
  State A: ccsd: 0/A1
  State B: eomee_ccsd/rhfref/triplets: 1/A1
@@ -418,3 +378,40 @@ I will do mean-field SOC with libqints, which is usually as good as full 2e SOC
  <Sz=1.00|(0.000000,0.000000)
  ______________________________________________________________
 """
+    args = get_args()
+    with open(args.qchem_output) as qchem:
+        trans_props_lines = get_trans_props(qchem)
+
+    transition_props = []
+    for prop in trans_props_lines:
+        transition = parse_SOC_section(prop)
+        if transition is None:
+            continue
+        transition_props += [transition]
+
+    out_data = []
+    for transition in transition_props:
+        soc = transition['SOC']
+        bra = transition['State B']
+        ket = transition['State A']
+        matrix = soc['<B|H _SO|A>']
+        tdm = transition['vec B_tdm_A']
+        out_data += [
+            {
+                'bra': {
+                    'irrep': bra['name'].split()[-1],
+                    'multiplicity': bra['multiplicity'],
+                },
+                'ket': {
+                    'irrep': ket['name'].split()[-1],
+                    'multiplicity': ket['multiplicity'],
+                },
+                'H SO': matrix,
+                'tdm': tdm,
+            },
+        ]
+    print(out_data)
+
+
+if __name__ == "__main__":
+    main()

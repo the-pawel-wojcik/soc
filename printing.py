@@ -27,8 +27,14 @@ def state2latex(state):
 
     multiplicity = state['multiplicity']
     spin_z = state['spin_z']
+    # handle fractional spins
+    if (spin_z % 1 > 0.1):
+        spin_z = r"\frac{" + str(int(2*spin_z)) + r"}{2}"
+    else:
+        spin_z = f"{int(spin_z):2d}"
+
     out = r'\ket{' + irrepN + ' ^{' + str(multiplicity) + '} '
-    out += irrep_lttr + irrep_decorator + ', ' + f"{spin_z:2d}" + '}'
+    out += irrep_lttr + irrep_decorator + ', ' + spin_z + '}'
     return out
 
 
@@ -163,7 +169,7 @@ def get_stateID_to_name_dict(states):
             # spin_z goes from -s up to s
             # multiplicity is 2s+1
             # s = 0.5 * (multiplicity - 1)
-            spin_z = - (multiplicity - 1) // 2 + n
+            spin_z = - (multiplicity - 1) / 2 + n
             # print(f"|{p:2d}> = |{irrep}, {multiplicity}, {spin_z}>")
             stateID2name[p] = {
                 "irrep": irrep,

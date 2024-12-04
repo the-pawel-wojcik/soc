@@ -19,7 +19,7 @@ cm2eV = 1.0/eV2cm
 CARTESIAN = ["x", "y", "z"]
 
 
-def get_args():
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('data')
     parser.add_argument('-b', '--subblock', default=None,
@@ -42,9 +42,9 @@ def get_args():
     return args
 
 
-def introduce_order(states):
+def introduce_order(states: list[dict]) -> int:
     """
-    Adds to every state the attribute 'position' which is a list of two
+    Adds to every state the key 'position' under which is a list of two
     integers. Those integers mark the subblock of the Hamiltonian (the first
     element and one after the last) that corresponds to this state.
 
@@ -59,7 +59,7 @@ def introduce_order(states):
     return dim
 
 
-def find_positions(new, knowns):
+def find_positions(new: dict, knowns: list[dict]) -> list[int] | None:
     new_irrep = new['irrep']
     new_mlp = new['multiplicity']
     for known in knowns:
@@ -71,11 +71,12 @@ def find_positions(new, knowns):
     return None
 
 
-def add_order_to_SOC(states, socs):
+def add_order_to_SOC(states: list[dict], socs: list[dict]):
     """
     Edits the `socs` elements by adding to their `bra` and `ket` dictionaries
-    the `position` key. The `position` value is the range of indices that the
-    states are assigned to in the state interaction Hamiltonian.
+    the `position` key. The value stored under `position` is the range of
+    indices that the states are assigned to in the state interaction
+    Hamiltonian.
     """
     for soc in socs:
         bra = soc['bra']
@@ -95,7 +96,11 @@ def add_order_to_SOC(states, socs):
         ket['position'] = ket_pos
 
 
-def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
+def construct_Hamiltonian_matrix(
+        dim: int,
+        states: list[dict],
+        socs_aggregate: list[dict],
+) -> np.ndarray:
     """
     Constructs a matrix of the spin-orbit couplings.
     All energies in wavenumber.
@@ -105,7 +110,6 @@ def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
 
     """
 
-    # carte blanche
     soc_matrix = np.zeros((dim, dim), dtype=np.cdouble)
 
     """
@@ -123,7 +127,6 @@ def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
     """
     Add matrix elements of the SOC part of the Breit-Pauli Hamiltonian
     """
-
     for soc in socs_aggregate:
         bra_pos = soc['bra']['position']
         ket_pos = soc['ket']['position']
@@ -135,21 +138,22 @@ def construct_Hamiltonian_matrix(dim, states, socs_aggregate):
     return soc_matrix
 
 
-def construct_tdms_matrix_vec(dim, states, trans_props_aggregate):
+def construct_tdms_matrix_vec(
+        dim: int,
+        states: list[dict],
+        trans_props_aggregate: list[dict]
+) -> dict[str, np.ndarray]:
     """
-    Constructs a matrix of the transition dipole moments.
+    Constructs a matrix of the dipole moment operator. The dipole moment is a
+    vector and so the matrix is a vector. The three components of the vector
+    are stored as matrices under the 'x', 'y', and 'z' keys of the output dict.
 
-    Returns:
-        None.
-
-    USE:
-    tdms_matrix = construct_tdms_matrix(dim, states, socs_aggregate)
-
+    The state-diagonal part of each matrix are the state dipole moments. The
+    state-off-diagonal part of each matrix are the transition dipole moments.
     """
 
-    # TDMs have three components each of them gets its own matrix
-    tdms_matrix = {
-        key: np.zeros((dim, dim)) for key in ["x", "y", "z"]}
+    # dipole moment matrices
+    dmms = {key: np.zeros((dim, dim)) for key in CARTESIAN}
 
     """
     TODO: Add state's dipole moments.
@@ -158,7 +162,6 @@ def construct_tdms_matrix_vec(dim, states, trans_props_aggregate):
     """
     Add transition dipole moments
     """
-
     for trans_prop in trans_props_aggregate:
         bra_pos = trans_prop['bra']['position']
         ket_pos = trans_prop['ket']['position']
@@ -170,15 +173,23 @@ def construct_tdms_matrix_vec(dim, states, trans_props_aggregate):
             tdm = tdm_vec[cart]
             # build a submatrix of tdms
             # It contains the same TDM value as its entry
+            # TODO: is this really `np.ones`? Figure out what exactly are the
+            # selection rules for changes in the spin projection.
+            # HINT: tdm would be non-zero only when dim_bra == dim_ket because
+            # spin-changing transitions are forbidden in the electronic
+            # Hamiltonian
             mel = tdm * np.ones(shape=(dim_bra, dim_ket))
+            if dim_bra != dim_ket and tdm != 0.0:
+                print(
+                    f"Info: non-zero {tdm=:.3f} in a spin-chaning transition",
+                    file=sys.stderr,
+                )
 
-            tdms_matrix[cart][bra_pos[0]:bra_pos[1],
-                              ket_pos[0]:ket_pos[1]] = mel
+            dmms[cart][bra_pos[0]:bra_pos[1], ket_pos[0]:ket_pos[1]] = mel
             # for some reason TDMs are real
-            tdms_matrix[cart][ket_pos[0]:ket_pos[1],
-                              bra_pos[0]:bra_pos[1]] = mel.T
+            dmms[cart][ket_pos[0]:ket_pos[1], bra_pos[0]:bra_pos[1]] = mel.T
 
-    return tdms_matrix
+    return dmms
 
 
 def soc_max_helper(soc):
@@ -196,10 +207,16 @@ def find_largest_soc(socs):
         print(f"Position {i}")
         print(f"ket: {soc['ket']['irrep']} {soc['ket']['multiplicity']}")
         print(f"bra: {soc['bra']['irrep']} {soc['bra']['multiplicity']}")
-        print(soc['H SO'])
+        for row in soc['H SO']:
+            for val in row:
+                print(f"({val.real:+.2f},{val.imag:+.2f})", end='')
+            print('')
 
 
 def prepare_subblock_ranges(args, dim):
+    """
+    Warning: This is a quinone-specific option
+    """
     rows = [i for i in range(dim)]
     cols = [i for i in range(dim)]
 
@@ -243,19 +260,21 @@ def main():
     # to every states
     dim = introduce_order(states)
 
-    # In the model EOM that I have used the CCSD reference state was one of the
-    # target states. There are thus two sets of transition properties:
-    # REF <--> EOM and EOM <--> EOM
-    # Despite the need for a separate calculations, both sets of data
-    # correspond to transitions between states of interests.
-    trans_props_ref2eom = data['ref2eom']
-    trans_props_eom2eom = data['eom2eom']
-    trans_props = trans_props_ref2eom + trans_props_eom2eom
+    # In the model EOM that I have used, the CCSD reference state was one of
+    # the target states. Such model produces two sets of transition properties:
+    # REF <--> EOM and EOM <--> EOM Despite the need for a separate
+    # calculations, both sets of data correspond to transitions between
+    # equivalent states of interest.
+    trans_props = data['eom2eom']
+    if 'ref2eom' in data:
+        trans_props_ref2eom = data['ref2eom']
+        trans_props += trans_props_ref2eom
 
     add_order_to_SOC(states, trans_props)
 
     hamiltonian = construct_Hamiltonian_matrix(dim, states, trans_props)
     evalues, evectors = np.linalg.eigh(hamiltonian)
+
     tdms_vec = construct_tdms_matrix_vec(dim, states, trans_props)
 
     # Find SOC-corrected transition dipole moments
@@ -276,12 +295,15 @@ def main():
                            title="SOCs + diagonal energies")
 
     if 'H' in args.plot:
-        plt_soc.show_Hamiltonian(hamiltonian,
-                                 title="the state-interaction Hamiltonian")
+        plt_soc.show_Hamiltonian(
+            hamiltonian,
+            title="the SOC Hamiltonian"
+        )
         vHv = evectors.conjugate().transpose() @ hamiltonian @ evectors
-        plt_soc.show_Hamiltonian(vHv,
-                                 title="the state-interaction Hamiltonian"
-                                 "\nafter diagonalization.")
+        plt_soc.show_Hamiltonian(
+            vHv,
+            title="the SOC Hamiltonian\nafter diagonalization."
+        )
 
     pr.deal_with_spectrum_printing(args, cols, evalues, evectors, states)
 

@@ -48,9 +48,10 @@ def skip_to(what: str, lines, ln: int):
     return ln
 
 
-def get_trans_props(qchem):
+def get_trans_props(qchem: list[str]) -> list[list[str]]:
     trans_props = []
-    property = None
+
+    property = None  # list[str] this variable stores transition property lines
     for ln, line in enumerate(qchem):
 
         # There is a new property detected
@@ -78,7 +79,7 @@ def get_trans_props(qchem):
     return trans_props
 
 
-def parse_SOC_section(prop):
+def parse_SOC_section(prop: list[str]) -> dict | None:
     data = {}
     ln = 0
     content = prop[ln]

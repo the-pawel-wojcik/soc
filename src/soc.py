@@ -22,18 +22,41 @@ CARTESIAN = ["x", "y", "z"]
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('data')
-    parser.add_argument('-b', '--subblock', default=None,
-                        type=str, help="columns,rows use XAB")
-    parser.add_argument('-e', '--eigenvectors', default="", type=str,
-                        help="Print eigenvectors, 'a' for ascii 'l' for latex."
-                        )
-    parser.add_argument('-H', '--Hamiltonian', default=False,
-                        action='store_true',
-                        help="Print the Hamiltonian matrix.")
-    parser.add_argument('-l', '--show_largest',
-                        default=False, action='store_true')
-    parser.add_argument('-p', '--plot', default="", type=str,
-                        help='Plot t for TDMs.')
+    parser.add_argument(
+        '-e',
+        '--eigenvectors',
+        default="",
+        type=str,
+        help="Print eigenvectors, 'a' for ascii 'l' for latex."
+    )
+    parser.add_argument(
+        '-H',
+        '--Hamiltonian',
+        default=False,
+        action='store_true',
+        help="Print the Hamiltonian matrix."
+    )
+    parser.add_argument(
+        '-p',
+        '--plot',
+        default="",
+        type=str,
+        help='H for the Hamiltonian matrix, t for TDMs.',
+    )
+    parser.add_argument(
+        '-b',
+        '--subblock',
+        default=None,
+        type=str,
+        help="columns,rows use XAB"
+    )
+    parser.add_argument(
+        '-l',
+        '--show_largest',
+        default=False,
+        action='store_true',
+        help="List the largest SOC-couplings."
+    )
     parser.add_argument('-r', '--branching_ratios', default=None, type=int,
                         help="Show decay branching ratios from the state <#>")
     parser.add_argument('-t', '--threshold', default=0.1,
@@ -122,7 +145,7 @@ def construct_Hamiltonian_matrix(
         diagonal_energy = np.eye(state['multiplicity'], dtype=np.cdouble)
         diagonal_energy *= energy_cm
         # diagonal_energy *= energy_eV
-        soc_matrix[pos[0]:pos[1], pos[0]:pos[1]] = diagonal_energy
+        soc_matrix[pos[0]:pos[1], pos[0]:pos[1]] += diagonal_energy
 
     """
     Add matrix elements of the SOC part of the Breit-Pauli Hamiltonian
@@ -131,9 +154,9 @@ def construct_Hamiltonian_matrix(
         bra_pos = soc['bra']['position']
         ket_pos = soc['ket']['position']
         mel = np.array(soc['H SO'], dtype=np.cdouble)
-        soc_matrix[bra_pos[0]:bra_pos[1], ket_pos[0]:ket_pos[1]] = mel
+        soc_matrix[bra_pos[0]:bra_pos[1], ket_pos[0]:ket_pos[1]] += mel
         mel_hc = np.conjugate(mel.T)
-        soc_matrix[ket_pos[0]:ket_pos[1], bra_pos[0]:bra_pos[1]] = mel_hc
+        soc_matrix[ket_pos[0]:ket_pos[1], bra_pos[0]:bra_pos[1]] += mel_hc
 
     return soc_matrix
 
@@ -156,10 +179,6 @@ def construct_tdms_matrix_vec(
     dmms = {key: np.zeros((dim, dim)) for key in CARTESIAN}
 
     """
-    TODO: Add state's dipole moments.
-    """
-
-    """
     Add transition dipole moments
     """
     for trans_prop in trans_props_aggregate:
@@ -172,18 +191,15 @@ def construct_tdms_matrix_vec(
         for cart in CARTESIAN:
             tdm = tdm_vec[cart]
             # build a submatrix of tdms
-            # It contains the same TDM value as its entry
-            # TODO: is this really `np.ones`? Figure out what exactly are the
-            # selection rules for changes in the spin projection.
-            # HINT: tdm would be non-zero only when dim_bra == dim_ket because
-            # spin-changing transitions are forbidden in the electronic
-            # Hamiltonian
-            mel = tdm * np.ones(shape=(dim_bra, dim_ket))
             if dim_bra != dim_ket and tdm != 0.0:
                 print(
                     f"Info: non-zero {tdm=:.3f} in a spin-chaning transition",
                     file=sys.stderr,
                 )
+            if dim_bra != dim_ket:
+                mel = np.zeros(shape=(dim_bra, dim_ket))
+            else:
+                mel = tdm * np.eye(N=dim_bra)
 
             dmms[cart][bra_pos[0]:bra_pos[1], ket_pos[0]:ket_pos[1]] = mel
             # for some reason TDMs are real

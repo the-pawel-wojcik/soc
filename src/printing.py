@@ -38,6 +38,94 @@ def state2latex(state):
     return out
 
 
+def str_complex(cmplx: complex, polar: bool = True) -> str:
+    output = str()
+    if polar is False:
+        output += f"{cmplx.real:+3.2f}"
+        output += f"{cmplx.imag:+3.2f}i"
+        return output
+
+    norm = abs(cmplx)
+    phi = m.phase(cmplx) / m.pi
+    # Positive number on the real axis
+    if abs(phi) < 0.01:
+        output += f"+{norm:4.3f}"
+    # Negative number on the real axis
+    elif abs(phi) > 0.95 and abs(phi) < 1.05:
+        output += f"-{norm:4.3f}"
+    # On the imaginary axis up
+    elif phi > 0.45 and phi < 0.55:
+        output += f"+{norm:4.3f}i"
+    # On the imaginary axis down
+    elif phi < -0.45 and phi > -0.55:
+        output += f"-{norm:4.3f}i"
+
+    # The number does not lie on any axis – need to show the phase
+    else:
+        output += f"{norm:+4.3f}"
+        output += r"e^{" + f"{phi:+3.2f}" + r"\pi i}"
+
+    return output
+
+
+def print_vector_ascii(v,
+                       already_sorted: bool = False,
+                       polar: bool = False,
+                       norm_threshold: float = 0.1,
+                       latex_eom_states: bool = False):
+    r"""
+    Prints an eigenvector of the soc-hamiltonian by listing the basis
+    vectors that have an amplitude (modulus square of its coefficient)
+    larger than *norm_threshold*.
+    Output is in plain-text
+
+    Parameters
+    ----------
+    v : eigenvector
+        v = c_{i_0} |i_0> + \ldots
+        In each pair the [0] element is i_0, and the [1] element is c_{i_0}
+    polar (bool, optional): 0.7+0.7i vs 1e^{0.25\pi i}
+    norm_threshold (float, optional):
+        print "c_{i_0} |i_0>" if |c_{i_0}| > norm_threshold
+    latex_eom_states (bool, optional): $1 ^2 \Sigma$  vs '1'. (Not implemented)
+        Defaults to False.
+
+
+    Returns
+    -------
+    output : string
+        Pretty printed plain-text representation of the eigenvector.
+
+    """
+    vector = [[i, val] for i, val in enumerate(v)]
+    vector.sort(key=lambda z: abs(z[1]), reverse=True)
+    small_contributions = False
+    output = ""
+    for coeff in vector:
+        norm = abs(coeff[1])
+        if norm > norm_threshold:
+            output += str_complex(coeff[1], polar)
+            # HINT: `label` is the right place to go fancy
+            label = coeff[0]
+            output += r"|"
+            if latex_eom_states:
+                output += f"{label}"
+            else:
+                output += f"{coeff[0]:d}"
+            output += ">"
+            output += " "
+        elif norm**2 > 5e-4:
+            small_contributions = True
+    if small_contributions:
+        output += r"+..."
+
+    # trim the leading + sign
+    if output[1] == "+":
+        output = output[2:]
+
+    return output
+
+
 def print_vector_latex(v,
                        already_sorted: bool = False,
                        polar: bool = False,
@@ -54,17 +142,17 @@ def print_vector_latex(v,
     v : eigenvector
         v = c_{i_0} |i_0> + \ldots
         In each pair the [0] element is i_0, and the [1] element is c_{i_0}
-    polar (bool, optional): $1 ^2 \Sigma$  vs '1'. Defaults to False.
+    polar (bool, optional): 0.7+0.7i vs 1e^{0.25\pi i}
     norm_threshold (float, optional):
         print "c_{i_0} |i_0>" if |c_{i_0}| > norm_threshold
-    latex_eom_states (bool, optional): $1 ^2 \Sigma$  vs '1'.
+    latex_eom_states (bool, optional): $1 ^2 \Sigma$  vs '1'. (Not implemented)
         Defaults to False.
 
 
     Returns
     -------
     output : string
-        Latex-formatted presentation of v
+        Latex-formatted eigenvector
 
     """
     vector = [[i, val] for i, val in enumerate(v)]
@@ -75,27 +163,7 @@ def print_vector_latex(v,
     for coeff in vector:
         norm = abs(coeff[1])
         if norm > norm_threshold:
-            if polar:
-                phi = m.phase(coeff[1]) / m.pi
-                # Positive number on the real axis
-                if abs(phi) < 0.01:
-                    output += f"+{norm:4.3f}"
-                # Negative number on the real axis
-                elif abs(phi) > 0.95 and abs(phi) < 1.05:
-                    output += f"-{norm:4.3f}"
-                # On the imaginary axis up
-                elif phi > 0.45 and phi < 0.55:
-                    output += f"+{norm:4.3f}i"
-                # On the imaginary axis down
-                elif phi < -0.45 and phi > -0.55:
-                    output += f"-{norm:4.3f}i"
-                # The number does not lie on any axis – need to show the phase
-                else:
-                    output += f"{norm:+4.3f}"
-                    output += r"e^{" + f"{phi:+3.2f}" + r"\pi i} "
-            else:
-                output += f"{coeff[1].real:+3.2f}"
-                output += f"{coeff[1].imag:+3.2f}i"
+            output += str_complex(coeff[1], polar)
             # HINT: `label` is the right place to go fancy
             label = coeff[0]
             output += r"\ket{"
@@ -275,13 +343,23 @@ def deal_with_spectrum_printing(args, cols, evalues, evectors, states):
         soc_energy = evalues[id]
         vector = evectors[:, id]
         print_threshold = args.threshold
-        vector_str = print_vector_latex(
-            vector, polar=True, norm_threshold=print_threshold)
         if "a" in args.eigenvectors:
-            print(f"{id:2d}: {soc_energy:9.2f} cm-1"
-                  f" = {soc_energy*cm2eV:6.3f} eV"
-                  f"\t\t{vector_str}")
+            ascii_vector_str = print_vector_ascii(
+                vector,
+                polar=True,
+                norm_threshold=print_threshold
+            )
+            print(
+                f"{id:2d}: {soc_energy:9.2f} cm-1"
+                f" = {soc_energy*cm2eV:6.3f} eV"
+                f"\t{ascii_vector_str}"
+            )
         elif "l" in args.eigenvectors:
+            vector_str = print_vector_latex(
+                vector,
+                polar=True,
+                norm_threshold=print_threshold
+            )
             # ket's name
             line = r'$\ket{' + f"{id:2d}" + r'}$'
             line += " & "

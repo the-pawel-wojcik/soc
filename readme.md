@@ -33,7 +33,7 @@ states = [
     {"irrep": "1/B2", "energy": {"E ex": {"eV": 2.0576}}, "multiplicity": 3},
 ]
 ```
-The `pqc/energy.py` script is of help here. 
+The `pqc/energy.py` script is of help here, see [pqc](https://github.com/the-pawel-wojcik/pqc).
 
 Warning: if the SOC calculations involve the CC reference, watch out for the
 repeating irrep labels.

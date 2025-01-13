@@ -274,6 +274,17 @@ def print_summary_of_transitions(transition_props):
         print("\n")
 
 
+def pretty_print_eom2eom(transitions):
+    TAB = '\t'
+    print("eom2eom = [")
+    for transition in transitions:
+        print(TAB, "{")
+        for key, val in transition.items():
+            print(TAB*2, f'"{key}": {val},')
+        print(TAB, "},")
+    print("]")
+
+
 def main():
     """ An example of a q-chem output block that this script parses:
  ------------------------------------------------------------------------------
@@ -412,7 +423,8 @@ I will do mean-field SOC with libqints, which is usually as good as full 2e SOC
                 'tdm': tdm,
             },
         ]
-    print(out_data)
+
+    pretty_print_eom2eom(out_data)
 
 
 if __name__ == "__main__":

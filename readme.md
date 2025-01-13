@@ -12,19 +12,15 @@ properties, like excitation energies or transition dipole moments.
 ```bash
 parser.py soc.inp.out > input_data.py
 ```
-The `input_data.py` file is unformatted. You might use the `useful_macros.vim`
-for help with formatting it, should you wish to look at it.
-
 The `input_data.py` file is a python script that will get executed to in order
-to introduce the `eom2eom` variable in the processing script. For this reason
-you need to decorate the relevant arrays with
+to introduce the `eom2eom` variable in the processing script. See the `eom2eom`
+array in the files
 ```python
-# EOM-EA-CCSD/RHF/cc-pVDZ
+# EOM-??-CCSD/RHF/cc-pVDZ the ?? could be EA, EE, IP, SF, DEA, ...
 eom2eom = [
 ...
 ]
 ```
-or something alike.
 
 ### Collected electronic states
 The `input_data.py` also needs the `states` list. Example:

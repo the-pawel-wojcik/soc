@@ -81,6 +81,8 @@ def get_trans_props(qchem: list[str]) -> list[list[str]]:
 
 def parse_SOC_section(prop: list[str]) -> dict | None:
     data = {}
+    for loc_ln, line in enumerate(prop):
+        print(f"{loc_ln:3d}: {line[:-1]}")
     ln = 0
     content = prop[ln]
     sep_start = content.find(':')
@@ -206,16 +208,19 @@ def parse_SOC_section(prop: list[str]) -> dict | None:
     FLOAT = r'([+-]?\d+\.\d+)'
     braket_re = r"\s*(?:Ket|Bra) state:  Computed S\^2 = " + FLOAT + \
         " will be treated as " + FLOAT + " Sz = " + FLOAT
-    pattern = re.compile(braket_re)
-    ln += 4
-    match = pattern.match(prop[ln])
+    braket_pattern: re.Pattern = re.compile(braket_re)
+    # Some version of Q-Chem have a different number of lines
+    ln = skip_to(r'\s*Ket state:  Computed S\^2 =.*', prop, ln)
+    match = braket_pattern.match(prop[ln])
+    print(f"{ln=}")
+    print(f"{prop[ln]=}")
     ket_s2 = float(match.group(2))
     ket_s = get_s_from_s2(ket_s2)
     ket_dim = int(2 * ket_s) + 1
     data['State A']['<S^2>'] = ket_s2
     data['State A']['multiplicity'] = ket_dim
     ln += 1
-    match = pattern.match(prop[ln])
+    match = braket_pattern.match(prop[ln])
     bra_s2 = float(match.group(2))
     bra_s = get_s_from_s2(bra_s2)
     bra_dim = int(2 * bra_s) + 1

@@ -2,9 +2,9 @@
 Programs like Q-Chem calculate eigenstates of the electronic Hamiltonian and
 their various properties, like spin-orbit couplings. This program takes the
 Q-Chem's output, extracts from it the valuable numbers, and assembles a
-"state-interaction" Hamiltonian, diagonalies the the Hamiltonian to produce the
+"state-interaction" Hamiltonian, diagonalises the Hamiltonian to produce the
 spin-orbit corrected states, and finally prints out the spin-orbit corrected
-properies, like excitation energies or transition dipole moments.
+properties, like excitation energies or transition dipole moments.
 
 ## Tutorial
 
@@ -39,8 +39,8 @@ states = [
 ```
 The `pqc/energy.py` script is of help here. 
 
-Warning: if the SOC calculations involve the CC referece, watch out for the
-repeating irrep lables.
+Warning: if the SOC calculations involve the CC reference, watch out for the
+repeating irrep labels.
 
 ### Collected state dipole moments
 The list `eom2eom` needs to be extended by "diagonal" entries with state dipole
